@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import "./CCTVMatrix.css";
+import eventBus from "shared/eventBus";
 
 const CAMERAS_DATA = [
   { id: "CAM-A", zone: "Zone Nord", defaultFeed: "RAS — Circulation normale" },
@@ -92,8 +93,8 @@ export default function CCTVMatrix() {
     setTimeout(() => setGlitching(false), 600);
   };
 
-  useEffect(() => {
-    const handleHackerCommand = () => {
+
+  const handleHackerCommand = () => {
       triggerGlitch();
       setBreachActive(true);
       setCameras((prev) =>
@@ -136,16 +137,18 @@ export default function CCTVMatrix() {
       setTimeout(resetCameras, 8000);
     };
 
-    window.addEventListener("hacker:command", handleHackerCommand);
-    window.addEventListener("power:outage", handlePowerOutage);
-    window.addEventListener("drone:formation", handleDroneFormation);
+  useEffect(() => {
+  const unsubHacker = eventBus.on("hacker:command", handleHackerCommand);
+  const unsubPower = eventBus.on("power:outage", handlePowerOutage);
+  const unsubDrone = eventBus.on("drone:formation", handleDroneFormation);
 
-    return () => {
-      window.removeEventListener("hacker:command", handleHackerCommand);
-      window.removeEventListener("power:outage", handlePowerOutage);
-      window.removeEventListener("drone:formation", handleDroneFormation);
-    };
-  }, [resetCameras]);
+  return () => {
+    unsubHacker();
+    unsubPower();
+    unsubDrone();
+  };
+}, [resetCameras]);
+
 
   const simulateBreach = () => {
     triggerGlitch();
